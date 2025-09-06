@@ -67,29 +67,33 @@ console.log("Is token valid?", isValid);
 
 - **`getAppointment(appointmentId)`**: Get detailed information for a specific appointment.
   ```json
-  // Response -> Appointment
   {
-    "appointmentId": 123,
-    "patientId": 456,
-    "professionalId": 789,
-    "branchId": 1,
-    "roomId": 2,
-    "startTime": "10:00",
-    "endTime": "10:30",
-    "date": "2025-12-01",
-    "blocks": 1,
-    "durationInMinutes": 30,
-    "statusId": 1,
-    "statusText": "Scheduled",
-    "isConfirmable": true,
-    "notes": "Regular check-up.",
-    "patient": { ... },
-    "room": { ... }
+  	"appointmentId": 123,
+  	"patientId": 456,
+  	"professionalId": 789,
+  	"branchId": 1,
+  	"roomId": 2,
+  	"startTime": "10:00",
+  	"endTime": "10:30",
+  	"date": "2025-12-01",
+  	"blocks": 1,
+  	"durationInMinutes": 30,
+  	"statusId": 1,
+  	"statusText": "Scheduled",
+  	"isConfirmable": true,
+  	"notes": "Regular check-up.",
+  	"patient": {
+  		"patientId": 12345678,
+  		"fullName": "John Doe"
+  	},
+  	"room": {
+  		"roomId": 1,
+  		"name": "Main Room"
+  	}
   }
   ```
 - **`getAppointmentBlockLength()`**: Get the configured duration of an appointment block.
   ```json
-  // Response
   {
   	"largo": 30,
   	"unidad": "minuto"
@@ -97,7 +101,6 @@ console.log("Is token valid?", isValid);
   ```
 - **`getMonthlyAvailability(professionalId, year, month, branchId, blocks)`**: Get monthly availability for a professional.
   ```json
-  // Response -> MonthlyAvailability[]
   [
   	{
   		"date": "2025-12-01",
@@ -109,7 +112,6 @@ console.log("Is token valid?", isValid);
   ```
 - **`getDailyAvailability(professionalId, date, branchId, duration)`**: Get daily availability for a professional.
   ```json
-  // Response -> DailyAvailability[]
   [
   	{
   		"startTime": "10:00",
@@ -122,7 +124,6 @@ console.log("Is token valid?", isValid);
   ```
 - **`createAppointment(appointmentData)`**: Create a new appointment.
   ```json
-  // Response -> CreateAppointmentResponse
   {
   	"message": "Appointment created successfully.",
   	"appointmentId": 123
@@ -130,7 +131,6 @@ console.log("Is token valid?", isValid);
   ```
 - **`updateAppointmentStatus(appointmentId, status)`**: Modify the status of an existing appointment.
   ```json
-  // Response
   {
   	"mensaje": "Status updated successfully.",
   	"id": 123
@@ -138,12 +138,10 @@ console.log("Is token valid?", isValid);
   ```
 - **`getDailyAppointments(date, branchId)`**: Get all appointments for a specific day and branch.
   ```json
-  // Response -> Appointment[]
   [ ... ]
   ```
 - **`getEffectiveHours(startDate, endDate, options)`**: Get a report of effective hours.
   ```json
-  // Response -> { data: EffectiveHours[] }
   {
     "data": [ ... ]
   }
@@ -153,7 +151,6 @@ console.log("Is token valid?", isValid);
 
 - **`getPatientByRut(rut, documentType)`**: Search for a patient by RUT.
   ```json
-  // Response -> Patient
   {
   	"patientId": 456,
   	"fullName": "John Doe",
@@ -171,7 +168,6 @@ console.log("Is token valid?", isValid);
 - **`searchPatients(searchTerm, documentType)`**: Search for patients by a search term.
 - **`createPatient(patientData)`**: Create a new patient.
   ```json
-  // Response -> CreatePatientResponse
   {
   	"message": "Patient created successfully.",
   	"patientId": 456
@@ -183,7 +179,6 @@ console.log("Is token valid?", isValid);
 
 - **`getProfessionals()`**: Get a list of all enabled professionals.
   ```json
-  // Response -> Professional[]
   [
   	{
   		"professionalId": 789,
@@ -199,7 +194,6 @@ console.log("Is token valid?", isValid);
 
 - **`getBranches()`**: Get a list of all available branches.
   ```json
-  // Response -> Branch[]
   [
   	{
   		"branchId": 1,
@@ -224,13 +218,11 @@ The SDK automatically normalizes API responses to provide a consistent and predi
 ### Example: Professional Data
 
 ```javascript
-// Raw API Response
 {
     "id_profesional": 12345,
     "nombre_completo": "Dr. John Smith"
 }
 
-// SDK Response
 {
     "professionalId": 12345678,
     "fullName": "Dr. John Smith"
@@ -240,7 +232,6 @@ The SDK automatically normalizes API responses to provide a consistent and predi
 ### Example: Appointment Data
 
 ```javascript
-// SDK Response
 {
     "appointmentId": 10321,
     "patientId": 1228,
@@ -271,12 +262,11 @@ The SDK automatically handles various RUT formats. You can provide RUTs with or 
 - **`validateRutDigit(rut)`**: Validates the check digit of a RUT.
 
 ```javascript
-// Example
 const sdk = new DentalSoftSDK(config);
 
-const formattedRut = sdk.formatRut("169386420"); // "16.938.642-0"
-const normalizedRut = sdk.normalizeRut("16.938.642-0"); // "169386420"
-const isValid = sdk.validateRutDigit("16.938.642-0"); // true
+const formattedRut = sdk.formatRut("169386420");
+const normalizedRut = sdk.normalizeRut("16.938.642-0");
+const isValid = sdk.validateRutDigit("16.938.642-0");
 ```
 
 ## Testing
