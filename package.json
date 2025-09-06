@@ -1,6 +1,6 @@
 {
 	"name": "dentalsoft-sdk",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Unofficial JavaScript SDK for the DentalSoft API",
 	"main": "dentalsoft-sdk.js",
 	"types": "dentalsoft-sdk.d.ts",
