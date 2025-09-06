@@ -95,15 +95,19 @@ class DentalSoftSDK {
 			const retryResponse = await fetch(url, requestOptions);
 
 			if (!retryResponse.ok) {
-				throw new Error(`Request failed after retry: ${retryResponse.status}`);
+				const errorBody = await retryResponse.text();
+				throw new Error(
+					`Request failed after retry: ${retryResponse.status} - ${errorBody}`
+				);
 			}
 
 			return await retryResponse.json();
 		}
 
 		if (!response.ok) {
+			const errorBody = await response.text();
 			throw new Error(
-				`Request failed: ${response.status} - ${response.statusText}`
+				`Request failed: ${response.status} - ${response.statusText} - ${errorBody}`
 			);
 		}
 
@@ -171,6 +175,24 @@ class DentalSoftSDK {
 		}
 
 		return response;
+	}
+
+	async createAppointment(appointmentData) {
+		const endpoint = "/agenda/cita";
+		const translatedData = {
+			sucursal: appointmentData.branchId,
+			profesional: appointmentData.professionalId,
+			sala: appointmentData.roomId,
+			paciente: appointmentData.patientId,
+			fecha: appointmentData.date,
+			inicio: appointmentData.startTime,
+			bloques: appointmentData.blocks,
+		};
+		const response = await this.makeRequest(endpoint, {
+			method: "POST",
+			body: JSON.stringify(translatedData),
+		});
+		return this.normalizeCreateAppointmentResponse(response);
 	}
 
 	// Professional API Methods
@@ -738,6 +760,16 @@ class DentalSoftSDK {
 			creationUserName: item.nombre_usuario_creacion,
 			creationUserLastName: item.apellido_paterno_usuario_creacion,
 			creationUserMothersLastName: item.apellido_materno_usuario_creacion,
+		};
+	}
+
+	normalizeCreateAppointmentResponse(response) {
+		if (!response) return response;
+
+		return {
+			...response,
+			message: response.mensaje,
+			appointmentId: response.id_cita,
 		};
 	}
 }
