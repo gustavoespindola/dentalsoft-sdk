@@ -11,13 +11,13 @@ This is a refactored version of the official JavaScript SDK for the DentalSoft A
 ## Installation
 
 ```bash
-npm install @dentalsoft/sdk
+npm install dentalsoft-sdk
 ```
 
 ## Quick Start
 
 ```javascript
-const DentalSoftSDK = require("@dentalsoft/sdk");
+const DentalSoftSDK = require("dentalsoft-sdk");
 
 const sdk = new DentalSoftSDK({
 	clientId: "your_client_id",
@@ -258,6 +258,27 @@ The SDK automatically normalizes API responses to provide a consistent and predi
 }
 ```
 
+## Utility Methods and RUT Handling
+
+The SDK includes several utility methods to simplify common tasks, especially around the handling of Chilean RUTs.
+
+### RUT Normalization and Validation
+
+The SDK automatically handles various RUT formats. You can provide RUTs with or without dots and hyphens, and the SDK will normalize them for API requests.
+
+- **`formatRut(rut)`**: Formats a RUT into the standard `xx.xxx.xxx-x` format.
+- **`normalizeRut(rut)`**: Removes all formatting from a RUT, leaving only numbers and the check digit.
+- **`validateRutDigit(rut)`**: Validates the check digit of a RUT.
+
+```javascript
+// Example
+const sdk = new DentalSoftSDK(config);
+
+const formattedRut = sdk.formatRut("169386420"); // "16.938.642-0"
+const normalizedRut = sdk.normalizeRut("16.938.642-0"); // "169386420"
+const isValid = sdk.validateRutDigit("16.938.642-0"); // true
+```
+
 ## Testing
 
 The SDK includes a comprehensive test suite that can be run from the command line.
@@ -297,7 +318,7 @@ import DentalSoftSDK, {
 	Professional,
 	Patient,
 	Appointment,
-} from "@dentalsoft/sdk";
+} from "dentalsoft-sdk";
 
 const config: SdkConfig = {
 	clientId: "your_client_id",

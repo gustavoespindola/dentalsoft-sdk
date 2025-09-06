@@ -1,5 +1,5 @@
 {
-	"name": "@dentalsoft/sdk",
+	"name": "dentalsoft-sdk",
 	"version": "1.0.0",
 	"description": "Unofficial JavaScript SDK for the DentalSoft API",
 	"main": "dentalsoft-sdk.js",
