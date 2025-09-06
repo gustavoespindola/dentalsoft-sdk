@@ -17,7 +17,7 @@ npm install @dentalsoft/sdk
 ## Quick Start
 
 ```javascript
-const DentalSoftSDK = require("./dentalsoft-sdk.refactored.js");
+const DentalSoftSDK = require("@dentalsoft/sdk");
 
 const sdk = new DentalSoftSDK({
 	clientId: "your_client_id",
@@ -297,7 +297,7 @@ import DentalSoftSDK, {
 	Professional,
 	Patient,
 	Appointment,
-} from "./dentalsoft-sdk.refactored";
+} from "@dentalsoft/sdk";
 
 const config: SdkConfig = {
 	clientId: "your_client_id",

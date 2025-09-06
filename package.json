@@ -4,6 +4,12 @@
 	"description": "Unofficial JavaScript SDK for the DentalSoft API",
 	"main": "dentalsoft-sdk.js",
 	"types": "dentalsoft-sdk.d.ts",
+	"files": [
+		"dentalsoft-sdk.js",
+		"dentalsoft-sdk.d.ts",
+		"README.md",
+		"LICENSE"
+	],
 	"scripts": {
 		"test": "node test-sdk.js --all"
 	},
