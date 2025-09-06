@@ -115,50 +115,93 @@ class DentalSoftSDK {
 	}
 
 	// Agenda API Methods
+	/**
+	 * Gets the monthly availability for a professional.
+	 * @param {number} professionalId - The ID of the professional.
+	 * @param {number} year - The year to check.
+	 * @param {number} month - The month to check.
+	 * @param {number} branchId - The ID of the branch.
+	 * @param {number} blocks - The number of blocks required.
+	 * @returns {Promise<MonthlyAvailability[]>}
+	 * @example
+	 * // returns
+	 * [
+	 *   {
+	 *     "date": "2025-10-01",
+	 *     "dayOfWeek": 3,
+	 *     "hasAvailableBlocks": true,
+	 *     "dayName": "Miércoles"
+	 *   }
+	 * ]
+	 */
 	async getMonthlyAvailability(professionalId, year, month, branchId, blocks) {
-		// Normalize professional ID to handle both string and number
-		const normalizedId = this.normalizeProfessionalId(professionalId);
-		const endpoint = `/agenda/disponibilidad/mensual/${normalizedId}/${year}/${month}/${branchId}/${blocks}`;
+		const endpoint = `/agenda/disponibilidad/mensual/${professionalId}/${year}/${month}/${branchId}/${blocks}`;
 		const monthlyData = await this.makeRequest(endpoint);
-
-		// Normalize field names for consistency
 		return Array.isArray(monthlyData)
 			? monthlyData.map((day) => this.normalizeMonthlyAvailabilityFields(day))
 			: [];
 	}
 
+	/**
+	 * Gets the daily availability for a professional.
+	 * @param {number} professionalId - The ID of the professional.
+	 * @param {string} date - The date to check (YYYY-MM-DD).
+	 * @param {number} branchId - The ID of the branch.
+	 * @param {number} duration - The duration in blocks.
+	 * @returns {Promise<DailyAvailability[]>}
+	 * @example
+	 * // returns
+	 * [
+	 *   {
+	 *     "startTime": "10:00",
+	 *     "endTime": "10:30",
+	 *     "professionalId": 123,
+	 *     "roomCode": "S1",
+	 *     "roomName": "Sillón 1"
+	 *   }
+	 * ]
+	 */
 	async getDailyAvailability(professionalId, date, branchId, duration) {
-		// Normalize professional ID to handle both string and number
-		const normalizedId = this.normalizeProfessionalId(professionalId);
-		const endpoint = `/agenda/disponibilidad/diaria/${normalizedId}/${date}/${branchId}/${duration}`;
+		const endpoint = `/agenda/disponibilidad/diaria/${professionalId}/${date}/${branchId}/${duration}`;
 		const availabilitySlots = await this.makeRequest(endpoint);
-
-		// Normalize field names for consistency
 		return Array.isArray(availabilitySlots)
 			? availabilitySlots.map((slot) => this.normalizeAvailabilityFields(slot))
 			: [];
 	}
 
+	/**
+	 * Gets all appointments for a specific day and branch.
+	 * @param {string} date - The date to check (YYYY-MM-DD).
+	 * @param {number} branchId - The ID of the branch.
+	 * @returns {Promise<Appointment[]>}
+	 */
 	async getDailyAppointments(date, branchId) {
 		const endpoint = `/agenda/dia_sucursal/${date}/${branchId}`;
 		const appointments = await this.makeRequest(endpoint);
-
-		// Normalize field names for consistency
 		return Array.isArray(appointments)
 			? appointments.map((appt) => this.normalizeAppointmentFields(appt))
 			: [];
 	}
 
-	async getEffectiveHours(fecha_desde, fecha_hasta, options = {}) {
-		const { id_sucursal, asistencia } = options;
-		let endpoint = `/agenda/informes/horas/efectivas/${fecha_desde}/${fecha_hasta}`;
+	/**
+	 * Gets a report of effective hours.
+	 * @param {string} startDate - The start date (YYYY-MM-DD).
+	 * @param {string} endDate - The end date (YYYY-MM-DD).
+	 * @param {object} [options] - Optional parameters.
+	 * @param {number} [options.branchId] - The ID of the branch.
+	 * @param {string} [options.attendance] - Filter by attendance ("asistida" or "inasistencia").
+	 * @returns {Promise<any>}
+	 */
+	async getEffectiveHours(startDate, endDate, options = {}) {
+		const { branchId, attendance } = options;
+		let endpoint = `/agenda/informes/horas/efectivas/${startDate}/${endDate}`;
 
 		const queryParams = new URLSearchParams();
-		if (id_sucursal) {
-			queryParams.append("id_sucursal", id_sucursal);
+		if (branchId) {
+			queryParams.append("id_sucursal", branchId);
 		}
-		if (asistencia) {
-			queryParams.append("asistencia", asistencia);
+		if (attendance) {
+			queryParams.append("asistencia", attendance);
 		}
 
 		if (queryParams.toString()) {
@@ -167,7 +210,6 @@ class DentalSoftSDK {
 
 		const response = await this.makeRequest(endpoint);
 
-		// Normalize the response data
 		if (response.data) {
 			response.data = response.data.map((item) =>
 				this.normalizeEffectiveHoursFields(item)
@@ -177,8 +219,58 @@ class DentalSoftSDK {
 		return response;
 	}
 
+	/**
+	 * Gets detailed information for a specific appointment.
+	 * @param {number} appointmentId - The ID of the appointment.
+	 * @returns {Promise<Appointment>}
+	 */
+	async getAppointment(appointmentId) {
+		const endpoint = `/agenda/cita/${appointmentId}`;
+		const appointment = await this.makeRequest(endpoint);
+		return this.normalizeAppointmentFields(appointment);
+	}
+
+	/**
+	 * Gets the configured duration of an appointment block.
+	 * @returns {Promise<{largo: number, unidad: string}>}
+	 * @example
+	 * // returns
+	 * {
+	 *   "largo": 30,
+	 *   "unidad": "minuto"
+	 * }
+	 */
+	async getAppointmentBlockLength() {
+		const endpoint = "/agenda/bloque/largo";
+		return await this.makeRequest(endpoint);
+	}
+
+	/**
+	 * Modifies the status of an existing appointment.
+	 * @param {number} appointmentId - The ID of the appointment.
+	 * @param {string} status - The new status ("confirmar" or "cancelar").
+	 * @returns {Promise<any>}
+	 */
+	async updateAppointmentStatus(appointmentId, status) {
+		const endpoint = "/agenda/cita/cambia_estado";
+		const translatedData = {
+			id: appointmentId,
+			estado: status,
+		};
+		return await this.makeRequest(endpoint, {
+			method: "PUT",
+			body: JSON.stringify(translatedData),
+		});
+	}
+
+	/**
+	 * Creates a new appointment.
+	 * @param {CreateAppointmentData} appointmentData - The appointment data.
+	 * @returns {Promise<CreateAppointmentResponse>}
+	 */
 	async createAppointment(appointmentData) {
 		const endpoint = "/agenda/cita";
+		// Translate SDK fields to original API fields
 		const translatedData = {
 			sucursal: appointmentData.branchId,
 			profesional: appointmentData.professionalId,
@@ -196,56 +288,66 @@ class DentalSoftSDK {
 	}
 
 	// Professional API Methods
+	/**
+	 * Gets a list of all enabled professionals.
+	 * @returns {Promise<Professional[]>}
+	 */
 	async getProfessionals() {
 		const endpoint = "/profesional/listado";
 		const professionals = await this.makeRequest(endpoint);
-
-		// Normalize field names for consistency
-		return professionals.map((prof) => ({
-			...prof,
-			id: prof.id_profesional || prof.id,
-			professionalId: prof.id_profesional || prof.professionalId,
-			name: prof.nombre_completo || prof.name,
-			fullName: prof.nombre_completo || prof.fullName,
-			// Keep original fields as fallback
-			id_profesional: prof.id_profesional,
-			nombre_completo: prof.nombre_completo,
-		}));
+		return professionals.map((prof) => this.normalizeProfessionalFields(prof));
 	}
 
-	// Patient API Methods (endpoint correcto confirmado)
-	async getPatientByRut(rut, tipoCedulaTexto = "rut") {
-		// IMPORTANTE: La API requiere el RUT COMPLETO con dígito verificador
-		const cedulaCompleta = rut.toString().replace(/\D/g, ""); // Solo quitar puntos y guion, mantener DV
-		const endpoint = `/paciente/datos?cedula=${cedulaCompleta}&tipo_cedula_texto=${tipoCedulaTexto}`;
-		const patient = await this.makeRequest(endpoint);
-
-		// Normalize field names for consistency
-		return this.normalizePatientFields(patient);
-	}
-
-	async getPatientByCedula(cedula, tipoCedulaTexto = "rut") {
-		const endpoint = `/paciente/datos?cedula=${cedula}&tipo_cedula_texto=${tipoCedulaTexto}`;
+	// Patient API Methods
+	/**
+	 * Searches for a patient by RUT.
+	 * @param {string} rut - The RUT of the patient.
+	 * @param {string} [documentType="rut"] - The type of document.
+	 * @returns {Promise<Patient>}
+	 */
+	async getPatientByRut(rut, documentType = "rut") {
+		const cedulaCompleta = rut.toString().replace(/\D/g, "");
+		const endpoint = `/paciente/datos?cedula=${cedulaCompleta}&tipo_cedula_texto=${documentType}`;
 		const patient = await this.makeRequest(endpoint);
 		return this.normalizePatientFields(patient);
 	}
 
-	async getPatientInfo(patientId, tipoCedulaTexto = "rut") {
-		const endpoint = `/paciente/info/${patientId}?tipo_cedula_texto=${tipoCedulaTexto}`;
+	/**
+	 * Searches for a patient by another document ID.
+	 * @param {string} cedula - The document ID.
+	 * @param {string} [documentType="rut"] - The type of document.
+	 * @returns {Promise<Patient>}
+	 */
+	async getPatientByCedula(cedula, documentType = "rut") {
+		const endpoint = `/paciente/datos?cedula=${cedula}&tipo_cedula_texto=${documentType}`;
 		const patient = await this.makeRequest(endpoint);
 		return this.normalizePatientFields(patient);
 	}
 
-	async searchPatients(searchTerm, tipoCedulaTexto = "rut") {
+	/**
+	 * Searches for patients by a search term.
+	 * @param {string} searchTerm - The search term.
+	 * @param {string} [documentType="rut"] - The type of document.
+	 * @returns {Promise<Patient[]|Patient>}
+	 */
+	async searchPatients(searchTerm, documentType = "rut") {
 		const endpoint = `/paciente/buscar?q=${encodeURIComponent(
 			searchTerm
-		)}&tipo_cedula_texto=${tipoCedulaTexto}`;
+		)}&tipo_cedula_texto=${documentType}`;
 		const patients = await this.makeRequest(endpoint);
 		return Array.isArray(patients)
 			? patients.map((p) => this.normalizePatientFields(p))
 			: this.normalizePatientFields(patients);
 	}
 
+	/**
+	 * Gets a patient's appointment history.
+	 * @param {number} patientId - The ID of the patient.
+	 * @param {number} branchId - The ID of the branch.
+	 * @param {number} [limitDays=90] - The number of days to look back.
+	 * @param {number} [maxAppointments=3] - The maximum number of appointments to return.
+	 * @returns {Promise<Appointment[]>}
+	 */
 	async getPatientAppointmentHistory(
 		patientId,
 		branchId,
@@ -257,19 +359,9 @@ class DentalSoftSDK {
 		const startDate = new Date();
 		startDate.setDate(endDate.getDate() - limitDays);
 
-		// Optimización: buscar hacia atrás desde la fecha actual
-		// y parar cuando encontremos suficientes citas o hayamos buscado suficiente
 		let currentDate = new Date(endDate);
 		let checkedDays = 0;
-		const maxDaysToCheck = Math.min(limitDays, 60); // Limitar a máximo 2 meses para evitar timeouts
-
-		console.log(
-			`🔍 Buscando citas desde ${this.formatDate(
-				currentDate.getFullYear(),
-				currentDate.getMonth() + 1,
-				currentDate.getDate()
-			)} hacia atrás...`
-		);
+		const maxDaysToCheck = Math.min(limitDays, 60);
 
 		while (
 			currentDate >= startDate &&
@@ -288,52 +380,30 @@ class DentalSoftSDK {
 					branchId
 				);
 
-				// Filtrar citas del paciente específico
 				const patientAppointments = dailyAppointments.filter(
-					(appointment) =>
-						(appointment.id_paciente || appointment.patientId) == patientId
+					(appointment) => appointment.patientId == patientId
 				);
 
 				if (patientAppointments.length > 0) {
-					console.log(
-						`   ✅ ${patientAppointments.length} cita(s) encontrada(s) en ${dateString}`
-					);
 					appointments.push(...patientAppointments);
-
-					// Si ya tenemos suficientes citas, podemos parar
 					if (appointments.length >= maxAppointments) {
-						console.log(
-							`   🎯 Se alcanzó el límite de ${maxAppointments} citas`
-						);
 						break;
 					}
 				}
 			} catch (error) {
-				// Continuar con la siguiente fecha si hay error (silenciosamente para no saturar logs)
 				if (error.message && !error.message.includes("404")) {
-					console.log(`   ⚠️ Error en ${dateString}: ${error.message}`);
+					console.error(
+						`Error fetching appointments for ${dateString}: ${error.message}`
+					);
 				}
 			}
 
 			currentDate.setDate(currentDate.getDate() - 1);
 			checkedDays++;
-
-			// Pausa pequeña para no saturar la API
-			if (checkedDays % 10 === 0) {
-				console.log(
-					`   📊 Revisados ${checkedDays} días, ${appointments.length} citas encontradas...`
-				);
-				await new Promise((resolve) => setTimeout(resolve, 100));
-			}
 		}
 
-		console.log(
-			`📈 Búsqueda completada: ${appointments.length} citas en ${checkedDays} días revisados`
-		);
-
-		// Ordenar por fecha más reciente primero y limitar al número máximo
 		return appointments
-			.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+			.sort((a, b) => new Date(b.date) - new Date(a.date))
 			.slice(0, maxAppointments);
 	}
 
@@ -345,13 +415,10 @@ class DentalSoftSDK {
 	}
 
 	formatRut(rut) {
-		// Keep only digits and 'k/K' for check digit
 		const rutLimpio = rut.toString().replace(/[^0-9kK]/gi, "");
 		if (rutLimpio.length < 2) return rut;
-
 		const cuerpo = rutLimpio.slice(0, -1);
 		const dv = rutLimpio.slice(-1).toLowerCase();
-
 		const cuerpoFormateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 		return `${cuerpoFormateado}-${dv}`;
 	}
@@ -363,18 +430,14 @@ class DentalSoftSDK {
 	validateRutDigit(rut) {
 		const rutClean = this.normalizeRut(rut);
 		if (rutClean.length < 2) return false;
-
 		const body = rutClean.slice(0, -1);
 		const dv = rutClean.slice(-1).toLowerCase();
-
 		let sum = 0;
 		let multiplier = 2;
-
 		for (let i = body.length - 1; i >= 0; i--) {
 			sum += parseInt(body[i]) * multiplier;
 			multiplier = multiplier < 7 ? multiplier + 1 : 2;
 		}
-
 		const remainder = sum % 11;
 		const expectedDv =
 			remainder < 2
@@ -382,7 +445,6 @@ class DentalSoftSDK {
 				: remainder === 10
 				? "k"
 				: (11 - remainder).toString();
-
 		return dv === expectedDv;
 	}
 
@@ -407,26 +469,25 @@ class DentalSoftSDK {
 		branchId,
 		duration = 2
 	) {
-		const normalizedId = this.normalizeProfessionalId(professionalId);
 		const monthlyData = await this.getMonthlyAvailability(
-			normalizedId,
+			professionalId,
 			year,
 			month,
 			branchId,
 			duration
 		);
-		const availableDays = monthlyData.filter((day) => day.bloques_disponibles);
+		const availableDays = monthlyData.filter((day) => day.hasAvailableBlocks);
 
 		const slotsPromises = availableDays.map(async (day) => {
 			const daySlots = await this.getDailyAvailability(
-				normalizedId,
-				day.fecha,
+				professionalId,
+				day.date,
 				branchId,
 				duration
 			);
 			return {
-				date: day.fecha,
-				dayName: this.getDayName(day.isodow),
+				date: day.date,
+				dayName: this.getDayName(day.dayOfWeek),
 				slots: daySlots,
 			};
 		});
@@ -434,14 +495,17 @@ class DentalSoftSDK {
 		return await Promise.all(slotsPromises);
 	}
 
+	/**
+	 * Searches for a professional by RUT.
+	 * @param {string} rut - The RUT of the professional.
+	 * @returns {Promise<Professional[]>}
+	 */
 	async searchProfessionalByRut(rut) {
 		if (!this.validateRutDigit(rut)) {
 			throw new Error(`RUT inválido: ${rut}. Verificar dígito verificador.`);
 		}
-
 		const normalizedSearchRut = this.normalizeRut(rut);
 		const professionals = await this.getProfessionals();
-
 		return professionals.filter((prof) => {
 			if (!prof.rut) return false;
 			const normalizedProfRut = this.normalizeRut(prof.rut);
@@ -453,47 +517,128 @@ class DentalSoftSDK {
 		return await this.searchProfessionalByRut(rut);
 	}
 
+	/**
+	 * Searches for a professional by ID.
+	 * @param {number|string} professionalId - The ID of the professional.
+	 * @returns {Promise<Professional|undefined>}
+	 */
+	async searchProfessionalById(professionalId) {
+		const professionals = await this.getProfessionals();
+		const normalizedId = professionalId.toString();
+		return professionals.find(
+			(prof) => prof.professionalId.toString() === normalizedId
+		);
+	}
+
+	/**
+	 * Gets budget report data.
+	 * @param {string} startDate - The start date (YYYY-MM-DD).
+	 * @param {string} endDate - The end date (YYYY-MM-DD).
+	 * @param {object} [options] - Optional parameters.
+	 * @param {number} [options.branchId] - The ID of the branch.
+	 * @returns {Promise<any>}
+	 */
+	async getBudgetReport(startDate, endDate, options = {}) {
+		const { branchId } = options;
+		let endpoint = `/presupuesto/informes/datos/gestion/${startDate}/${endDate}`;
+		if (branchId) {
+			endpoint += `?id_sucursal=${branchId}`;
+		}
+		return await this.makeRequest(endpoint);
+	}
+
+	/**
+	 * Gets a detailed income report.
+	 * @param {string} startDate - The start date (YYYY-MM-DD).
+	 * @param {string} endDate - The end date (YYYY-MM-DD).
+	 * @param {object} [options] - Optional parameters.
+	 * @param {number} [options.branchId] - The ID of the branch.
+	 * @returns {Promise<any>}
+	 */
+	async getPaymentReport(startDate, endDate, options = {}) {
+		const { branchId } = options;
+		let endpoint = `/pago/informes/ingreso/detallado/${startDate}/${endDate}`;
+		if (branchId) {
+			endpoint += `?id_sucursal=${branchId}`;
+		}
+		return await this.makeRequest(endpoint);
+	}
+
+	/**
+	 * Gets a list of all available branches.
+	 * @returns {Promise<Branch[]>}
+	 */
+	async getBranches() {
+		const endpoint = "/sucursal/listado";
+		const branches = await this.makeRequest(endpoint);
+		return Array.isArray(branches)
+			? branches.map((branch) => this.normalizeBranchFields(branch))
+			: [];
+	}
+
+	/**
+	 * Creates a new patient.
+	 * @param {CreatePatientData} patientData - The patient data.
+	 * @returns {Promise<CreatePatientResponse>}
+	 */
+	async createPatient(patientData) {
+		const endpoint = "/paciente/nuevo";
+		const translatedData = {
+			cedula: patientData.documentId,
+			tipo_cedula_texto: patientData.documentType,
+			nombre: patientData.name,
+			apellido_paterno: patientData.lastName,
+			apellido_materno: patientData.secondLastName,
+			email: patientData.email,
+			celular: patientData.mobilePhone,
+			id_referencia: patientData.referenceId,
+		};
+		const response = await this.makeRequest(endpoint, {
+			method: "POST",
+			body: JSON.stringify(translatedData),
+		});
+		return this.normalizeCreatePatientResponse(response);
+	}
+
 	// Utility methods for field normalization
+	normalizeProfessionalFields(professional) {
+		if (!professional) return professional;
+		return {
+			professionalId: professional.id_profesional,
+			fullName: professional.nombre_completo,
+		};
+	}
+
 	normalizePatientFields(patient) {
 		if (!patient) return patient;
-
 		return {
-			...patient,
-			// Normalized field names
-			id: patient.id_paciente || patient.id,
-			patientId: patient.id_paciente || patient.patientId,
-			name: patient.nombre_completo || patient.nombre || patient.name,
-			fullName: patient.nombre_completo || patient.fullName,
-			rut: patient.cedula || patient.rut,
-			phone: patient.celular || patient.telefono || patient.phone,
+			patientId: patient.id_paciente || patient.id,
+			fullName: patient.nombre_completo || patient.nombre,
+			rut: patient.cedula,
+			phone: patient.celular || patient.telefono,
 			email: patient.email || patient.correo,
-			gender: patient.sexo || patient.gender,
-			birthDate: patient.fecha_nacimiento || patient.birthDate,
-			documentType: patient.tipo_cedula || patient.documentType,
-			status: patient.estado || patient.status,
-			// Keep original fields as fallback
-			id_paciente: patient.id_paciente,
-			nombre_completo: patient.nombre_completo || patient.nombre,
-			cedula: patient.cedula,
-			celular: patient.celular,
-			sexo: patient.sexo,
-			fecha_nacimiento: patient.fecha_nacimiento,
-			tipo_cedula: patient.tipo_cedula,
-			estado: patient.estado,
-			correo: patient.email,
+			gender: patient.sexo,
+			birthDate: patient.fecha_nacimiento,
+			documentType: patient.tipo_cedula,
+			status: patient.estado,
+		};
+	}
+
+	normalizeCreatePatientResponse(response) {
+		if (!response) return response;
+		return {
+			message: response.mensaje,
+			patientId: response.paciente,
 		};
 	}
 
 	normalizeAppointmentFields(appointment) {
 		if (!appointment) return appointment;
+		const startTime = appointment.inicio || appointment.hora_inicio;
+		const blocks = appointment.bloques;
+		let endTime = appointment.hora_fin;
 
-		// Calculate end time from start time and blocks (assuming 30 min per block)
-		let endTime = null;
-		const startTime =
-			appointment.inicio || appointment.hora_inicio || appointment.startTime;
-		const blocks = appointment.bloques || appointment.blocks;
-
-		if (startTime && blocks) {
+		if (startTime && blocks && !endTime) {
 			const [hours, minutes] = startTime.split(":").map(Number);
 			const startMinutes = hours * 60 + minutes;
 			const endMinutes = startMinutes + blocks * 30;
@@ -505,205 +650,74 @@ class DentalSoftSDK {
 		}
 
 		return {
-			...appointment,
-			// Normalized field names
-			id: appointment.id_cita || appointment.id,
-			appointmentId:
-				appointment.id_cita || appointment.id || appointment.appointmentId,
-			patientId: appointment.id_paciente || appointment.patientId,
-			professionalId: appointment.id_profesional || appointment.professionalId,
-			branchId: appointment.id_sucursal || appointment.branchId,
-			roomId: appointment.id_sala || appointment.roomId,
+			appointmentId: appointment.id_cita || appointment.id,
+			patientId: appointment.id_paciente,
+			professionalId: appointment.id_profesional,
+			branchId: appointment.id_sucursal,
+			roomId: appointment.id_sala,
 			startTime: startTime,
-			endTime: endTime || appointment.hora_fin || appointment.endTime,
-			date: appointment.fecha || appointment.date,
+			endTime: endTime,
+			date: appointment.fecha,
 			blocks: blocks,
-			duration: blocks ? blocks * 30 : null, // Duration in minutes
-			status: appointment.estado || appointment.status,
-			statusText: appointment.estado_texto || appointment.statusText,
-			confirmable:
-				appointment.confirmable !== undefined ? appointment.confirmable : null,
-			notes:
-				appointment.observaciones || appointment.notas || appointment.notes,
-			// Normalized nested data
+			durationInMinutes: blocks ? blocks * 30 : null,
+			statusId: appointment.estado,
+			statusText: appointment.estado_texto,
+			isConfirmable: appointment.confirmable,
+			notes: appointment.observaciones || appointment.notas,
 			patient: appointment.paciente
 				? this.normalizePatientFields(appointment.paciente)
 				: null,
 			room: appointment.sala
 				? this.normalizeRoomFields(appointment.sala)
 				: null,
-			// Keep original fields as fallback
-			id_cita: appointment.id_cita || appointment.id,
-			id_paciente: appointment.id_paciente,
-			id_profesional: appointment.id_profesional,
-			id_sucursal: appointment.id_sucursal,
-			id_sala: appointment.id_sala,
-			inicio: appointment.inicio,
-			bloques: appointment.bloques,
-			estado: appointment.estado,
-			estado_texto: appointment.estado_texto,
-			hora_inicio: startTime,
-			hora_fin: endTime || appointment.hora_fin,
-			fecha: appointment.fecha,
-			observaciones: appointment.observaciones,
-			// Additional nested data (original)
-			paciente: appointment.paciente,
-			sala: appointment.sala,
 		};
 	}
 
-	// Helper method to normalize professional ID
-	normalizeProfessionalId(professionalId) {
-		// Convert to string to handle both string and number inputs consistently
-		return professionalId.toString();
-	}
-
-	// Helper method to find professional by ID with flexible matching
-	findProfessionalById(professionals, targetId) {
-		const normalizedTargetId = this.normalizeProfessionalId(targetId);
-
-		return professionals.find((prof) => {
-			const profId = prof.id || prof.id_profesional;
-			const normalizedProfId = this.normalizeProfessionalId(profId);
-			return normalizedProfId === normalizedTargetId;
-		});
-	}
-
-	// Enhanced method to get daily appointments with professional information
 	async getDailyAppointmentsWithProfessionals(date, branchId) {
 		const appointments = await this.getDailyAppointments(date, branchId);
 		const professionals = await this.getProfessionals();
-
-		// For each appointment, try to find the professional by checking availability
-		const enhancedAppointments = await Promise.all(
-			appointments.map(async (appointment) => {
-				let assignedProfessional = null;
-
-				// Try to find which professional has this time slot booked
-				for (const professional of professionals) {
-					try {
-						const profId = professional.id || professional.id_profesional;
-						const dailySlots = await this.getDailyAvailability(
-							profId,
-							date,
-							branchId,
-							1
-						);
-
-						// If professional has no availability at this time, they might be booked
-						if (!dailySlots || dailySlots.length === 0) {
-							continue;
-						}
-
-						// Check if the appointment time conflicts with available slots
-						const appointmentStart = appointment.startTime;
-						if (appointmentStart) {
-							const hasConflict = !dailySlots.some(
-								(slot) =>
-									(slot.startTime || slot.hora_inicio) <= appointmentStart &&
-									appointmentStart < (slot.endTime || slot.hora_fin)
-							);
-
-							if (hasConflict) {
-								// This professional is likely booked at this time
-								assignedProfessional = professional;
-								break;
-							}
-						}
-					} catch (error) {
-						// Continue with next professional if there's an error
-						continue;
-					}
-				}
-
-				return {
-					...appointment,
-					professional: assignedProfessional,
-					professionalName:
-						assignedProfessional?.name ||
-						assignedProfessional?.nombre_completo ||
-						"Unknown",
-					professionalId:
-						assignedProfessional?.id ||
-						assignedProfessional?.id_profesional ||
-						null,
-				};
-			})
+		const professionalMap = new Map(
+			professionals.map((p) => [p.professionalId, p])
 		);
-
-		return enhancedAppointments;
+		return appointments.map((appointment) => ({
+			...appointment,
+			professional: professionalMap.get(appointment.professionalId) || null,
+		}));
 	}
 
-	// Helper method to normalize availability slot fields
 	normalizeAvailabilityFields(slot) {
 		if (!slot) return slot;
-
 		return {
-			...slot,
-			// Normalized field names
-			id: slot.id || slot.id_profesional,
-			startTime: slot.inicio || slot.startTime,
-			endTime: slot.fin || slot.endTime,
-			professionalId: slot.id_profesional || slot.professionalId,
-			roomCode: slot.cod_sala || slot.roomCode,
-			roomName: slot.nom_sala || slot.roomName,
-			// Keep original fields as fallback
-			inicio: slot.inicio,
-			fin: slot.fin,
-			id_profesional: slot.id_profesional,
-			cod_sala: slot.cod_sala,
-			nom_sala: slot.nom_sala,
-			// Legacy compatibility
-			hora_inicio: slot.inicio || slot.hora_inicio,
-			hora_fin: slot.fin || slot.hora_fin,
+			startTime: slot.inicio,
+			endTime: slot.fin,
+			professionalId: slot.id_profesional,
+			roomCode: slot.cod_sala,
+			roomName: slot.nom_sala,
 		};
 	}
 
-	// Helper method to normalize monthly availability fields
 	normalizeMonthlyAvailabilityFields(day) {
 		if (!day) return day;
-
 		return {
-			...day,
-			// Normalized field names
-			date: day.fecha || day.date,
-			dayOfWeek: day.isodow || day.dayOfWeek,
-			availableBlocks: day.bloques_disponibles || day.availableBlocks,
-			dayName: this.getDayName(day.isodow) || day.dayName,
-			// Keep original fields as fallback
-			fecha: day.fecha,
-			isodow: day.isodow,
-			bloques_disponibles: day.bloques_disponibles,
+			date: day.fecha,
+			dayOfWeek: day.isodow,
+			hasAvailableBlocks: day.bloques_disponibles,
+			dayName: this.getDayName(day.isodow),
 		};
 	}
 
-	// Helper method to normalize room fields
 	normalizeRoomFields(room) {
 		if (!room) return room;
-
 		return {
-			...room,
-			// Normalized field names
-			id: room.id_sala || room.id,
-			roomId: room.id_sala || room.roomId,
-			name: room.nom_sala || room.nombre || room.name,
-			roomName: room.nom_sala || room.roomName,
-			code: room.cod_sala || room.codigo || room.code,
-			roomCode: room.cod_sala || room.roomCode,
-			// Keep original fields as fallback
-			id_sala: room.id_sala || room.id,
-			nom_sala: room.nom_sala || room.nombre,
-			cod_sala: room.cod_sala,
-			nombre: room.nombre,
+			roomId: room.id_sala || room.id,
+			name: room.nom_sala || room.nombre,
+			code: room.cod_sala || room.codigo,
 		};
 	}
 
 	normalizeEffectiveHoursFields(item) {
 		if (!item) return item;
-
 		return {
-			...item,
-			// Normalized field names
 			appointmentId: item.id_cita,
 			appointmentDate: item.fecha_cita,
 			appointmentTime: item.hora_cita,
@@ -765,11 +779,21 @@ class DentalSoftSDK {
 
 	normalizeCreateAppointmentResponse(response) {
 		if (!response) return response;
-
 		return {
-			...response,
 			message: response.mensaje,
 			appointmentId: response.id_cita,
+		};
+	}
+
+	normalizeBranchFields(branch) {
+		if (!branch) return branch;
+		return {
+			branchId: branch.id,
+			name: branch.nombre,
+			phone: branch.telefono,
+			address: branch.direccion,
+			status: branch.estado,
+			statusText: branch.estado_texto,
 		};
 	}
 }
