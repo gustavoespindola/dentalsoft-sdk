@@ -1,0 +1,63 @@
+{
+  "name": "@dentalsoft/sdk",
+  "version": "2.0.0",
+  "description": "Official JavaScript SDK for the DentalSoft API with normalized data fields and comprehensive functionality",
+  "main": "dentalsoft-sdk.js",
+  "types": "dentalsoft-sdk.d.ts",
+  "scripts": {
+    "test": "node tests/automated/run-all-tests.js",
+    "test:unit": "node tests/automated/run-all-tests.js unit",
+    "test:api": "node tests/automated/run-all-tests.js api", 
+    "test:integration": "node tests/automated/run-all-tests.js integration",
+    "test:performance": "node tests/automated/run-all-tests.js performance",
+    "test:quick": "node tests/automated/run-all-tests.js quick",
+    "test:self": "node tests/automated/run-all-tests.js --self-test",
+    "test:legacy": "node test-sdk.js",
+    "example": "node example.js",
+    "lint": "echo 'Linting not configured'",
+    "build": "echo 'No build step required'",
+    "prepublishOnly": "npm run test:unit && npm run test:quick"
+  },
+  "keywords": [
+    "dentalsoft",
+    "dental",
+    "clinic",
+    "api",
+    "sdk",
+    "appointments",
+    "healthcare",
+    "chile",
+    "rut",
+    "normalized",
+    "typescript"
+  ],
+  "author": "DentalSoft",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dentalsoft/sdk-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dentalsoft/sdk-js/issues"
+  },
+  "homepage": "https://github.com/dentalsoft/sdk-js#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "dotenv": "^17.2.2"
+  },
+  "files": [
+    "dentalsoft-sdk.js",
+    "dentalsoft-sdk.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/dentalsoft"
+  }
+}
